@@ -1,0 +1,22 @@
+module bnfs_p2p
+
+go 1.20
+
+require (
+	github.com/google/uuid v1.6.0
+	github.com/pion/ice/v3 v3.0.10
+)
+
+require (
+	github.com/pion/dtls/v2 v2.2.11 // indirect
+	github.com/pion/logging v0.2.2 // indirect
+	github.com/pion/mdns/v2 v2.0.7 // indirect
+	github.com/pion/randutil v0.1.0 // indirect
+	github.com/pion/stun/v2 v2.0.0 // indirect
+	github.com/pion/transport/v2 v2.2.4 // indirect
+	github.com/pion/transport/v3 v3.0.2 // indirect
+	github.com/pion/turn/v3 v3.0.3 // indirect
+	golang.org/x/crypto v0.24.0 // indirect
+	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
+)
