@@ -3,6 +3,8 @@ package networkFrameWork
 import (
 	"bnfs_p2p/network"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"github.com/google/uuid"
 	"io"
 	"net"
@@ -51,11 +53,7 @@ func (t *TcpStream) SendMessage(ctx context.Context, message *network.Message) e
 func (t *TcpStream) NodeId() string {
 	return t.nodeId
 }
-func TryConnectTCPStream(addr, targetNodeId, originalNodeId string) (network.Stream, string, error) {
-	conn, err := net.Dial("tcp4", addr)
-	if err != nil {
-		return nil, "", err
-	}
+func TryConnectTCPStream(addr, targetNodeId, originalPubkeyHex string) (network.Stream, string, error) {
 	connectionId := uuid.New().String()
 	header := &network.Header{
 		RouteName:     "",
@@ -67,21 +65,50 @@ func TryConnectTCPStream(addr, targetNodeId, originalNodeId string) (network.Str
 	}
 	body := &network.Message{
 		Header:  header,
-		Payload: []byte(originalNodeId),
+		Payload: []byte(originalPubkeyHex),
 	}
-	bytes, err := body.ParseToBytes()
+	hash := sha256.Sum256([]byte(originalPubkeyHex))
+	originalNodeId := hex.EncodeToString(hash[:])
+	stream, err := clientStream(body, addr, originalNodeId)
+	return stream, connectionId, err
+}
+
+func TryRegisterRelayStream(pubKey, relayAddress string) (network.Stream, error) {
+	hash := sha256.Sum256([]byte(pubKey))
+	originalNodeId := hex.EncodeToString(hash[:])
+
+	header := &network.Header{
+		RouteName:     "",
+		NodeId:        originalNodeId,
+		NodeIdVersion: 1,
+		PayLoadLength: 0,
+		ConnectionId:  "",
+		OriginData:    nil,
+	}
+	body := &network.Message{
+		Header:  header,
+		Payload: []byte(pubKey),
+	}
+	return clientStream(body, relayAddress, originalNodeId)
+}
+
+func clientStream(FirstMessage *network.Message, tcpAddr, originalNodeId string) (network.Stream, error) {
+	conn, err := net.Dial("tcp4", tcpAddr)
+	if err != nil {
+		return nil, err
+	}
+	bytes, err := FirstMessage.ParseToBytes()
 	if err != nil {
 		conn.Close()
-		return nil, "", err
+		return nil, err
 	}
 	_, err = conn.Write(bytes)
 	if err != nil {
 		conn.Close()
-		return nil, "", err
+		return nil, err
 	}
-
 	return &TcpStream{
 		nodeId:     originalNodeId,
 		connection: conn,
-	}, connectionId, nil
+	}, nil
 }

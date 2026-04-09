@@ -304,11 +304,16 @@ func TestRandomRelayClientInteraction(t *testing.T) {
 			continue
 		}
 
-		clientID := fmt.Sprintf("client-node-id-%d", i)
-		hash := sha256.Sum256([]byte(clientID))
+		pair, err := crypoto.MakeKeyPair()
+		if err != nil {
+			t.Fatalf("Failed to make key pair: %v", err)
+			return
+		}
+		pubKeyStr := crypoto.GetPubKeyStr(&pair.PublicKey)
+		hash := sha256.Sum256([]byte(pubKeyStr))
 		originalNodeId := hex.EncodeToString(hash[:])
 		go func() {
-			stream, connectionId, err := TryConnectTCPStream("127.0.0.1:9000", targetRelayId, originalNodeId)
+			stream, connectionId, err := TryConnectTCPStream("127.0.0.1:9000", targetRelayId, pubKeyStr)
 			if err != nil {
 				t.Logf("Failed to connect to relay: %v", err)
 				return
