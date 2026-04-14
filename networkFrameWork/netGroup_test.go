@@ -17,10 +17,6 @@ import (
 )
 
 func NodeEstablish(address, originalNodeIdSource string, t *testing.T, wg *sync.WaitGroup, continueEstablish bool) (Id string) {
-	dial, err := net.Dial("tcp", address)
-	if err != nil {
-		return ""
-	}
 	//originalNodeIdSource := "test-node-id-source-string"
 	pair, err := crypoto.MakeKeyPair()
 	if err != nil {
@@ -33,33 +29,14 @@ func NodeEstablish(address, originalNodeIdSource string, t *testing.T, wg *sync.
 
 	go func() {
 		defer wg.Done()
-		//time.Sleep(1 * time.Second)
-		header := &network.Header{
-			RouteName:     "",
-			NodeId:        originalNodeId,
-			NodeIdVersion: 1,
-			PayLoadLength: 0,
-			ConnectionId:  "",
-			OriginData:    nil,
-		}
-		body := &network.Message{
-			Header:  header,
-			Payload: []byte(pairId),
-		}
-		bytes, err := body.ParseToBytes()
+		stream, err := TryRegisterRelayStream(pairId, address)
 		if err != nil {
-			t.Errorf("ERROR:" + err.Error())
-			return
-		}
-		// 第一次建立连接
-		_, err = dial.Write(bytes)
-		if err != nil {
-			t.Errorf("ERROR:" + err.Error())
+			t.Fatalf("Failed to register relay stream: %v", err.Error())
 			return
 		}
 		for {
 			// 接下来接收响应 写入
-			ClientFirstMessage, _ := tryReadMessageFromConnection(dial)
+			ClientFirstMessage, _ := stream.NextMessage()
 			marshal, err := json.Marshal(ClientFirstMessage)
 			if err != nil {
 				return
@@ -72,15 +49,10 @@ func NodeEstablish(address, originalNodeIdSource string, t *testing.T, wg *sync.
 				Header:  ClientFirstMessage.Header,
 				Payload: []byte("hello world"),
 			}
-			bytes, err = ResponseMessage.ParseToBytes()
+			err = stream.SendMessage(context.Background(), ResponseMessage)
 			if err != nil {
+				stream.Close()
 				t.Errorf("ERROR:" + err.Error())
-				return
-			}
-			// 发送响应
-			_, err = dial.Write(bytes)
-			if !continueEstablish {
-				dial.Close()
 				return
 			}
 		}
@@ -107,6 +79,21 @@ func ClientTestWithStream(clientSteam network.Stream, connectionId, targetNodeId
 	ClientFirstMessage, _ := clientSteam.NextMessage()
 
 	t.Log("RelayServerFirstMessage:", string(ClientFirstMessage.Payload))
+}
+
+func RelayServerWithStream(relayServerAddr string, t *testing.T, wg *sync.WaitGroup, continueEstablish bool) (Id string) {
+	pair, err := crypoto.MakeKeyPair()
+	if err != nil {
+		t.Errorf("ERROR:" + err.Error())
+		return ""
+	}
+	pairId := crypoto.GetPubKeyStr(&pair.PublicKey)
+	stream, err := TryRegisterRelayStream(pairId, relayServerAddr)
+	if err != nil {
+		t.Fatalf("Failed to register relay stream: %v", err.Error())
+		return ""
+	}
+	return stream.NodeId()
 }
 
 func ClientSendTestMessage(TargetNodeId, RelayServerAddr, originalNodeIdSource string, t *testing.T, wg *sync.WaitGroup) string {
@@ -197,9 +184,11 @@ func TestNewStreamGroup(t *testing.T) {
 				t.Logf("Failed to setup relay stream: %v", err)
 				return
 			}
-			go func() {
+			go func(index int) {
+				t.Logf("StreamOn: %d", index)
 				group.StreamOn(stream, firstMessage)
-			}()
+
+			}(index)
 		}
 		index++
 		wg.Add(1)

@@ -51,6 +51,9 @@ func (s *StreamGroup) StreamOn(stream network.Stream, FirstMessage *network.Mess
 		stream: stream,
 		flag:   cancelFunc,
 	}
+	if len(connectionId) == 0 {
+		return errors.New("connectionId is empty")
+	}
 	s.connectionMap[connectionId] = c
 	s.lock.Unlock()
 
@@ -95,7 +98,11 @@ func (s *StreamGroup) StartListen() {
 			}
 
 			resource := s.connectionMap[message.Header.ConnectionId]
-
+			if resource == nil {
+				// 目前策略是忽略本次连接
+				// TODO: 消息转发
+				continue
+			}
 			resource.stream.SendMessage(s.ctx, message)
 		}
 
