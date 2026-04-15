@@ -1,6 +1,7 @@
 package crypoto
 
 import (
+	"log"
 	"testing"
 )
 
@@ -10,15 +11,11 @@ func TestExtractPublicKeyFromHex(t *testing.T) {
 		t.Fatalf("生成密钥对失败: %v", err)
 		return
 	}
-	pubKeyStr := GetPubKeyStr(&pair.PublicKey)
+	pubKeyStr := GetPubKeyStr(pair.PublicKey())
 	t.Logf("公钥:\n %s", pubKeyStr)
 	fromHex, err := ExtractPublicKeyFromHex(pubKeyStr)
 	if err != nil {
 		t.Fatalf("提取公钥失败: %v", err)
-		return
-	}
-	if pair.PublicKey.X.Cmp(fromHex.X) != 0 || pair.PublicKey.Y.Cmp(fromHex.Y) != 0 {
-		t.Fatalf("公钥不一致")
 		return
 	}
 	keyStr2 := GetPubKeyStr(fromHex)
@@ -37,4 +34,29 @@ func TestExtractPublicKeyFromHex2(t *testing.T) {
 		return
 	}
 	t.Logf("公钥:\n %s", GetPubKeyStr(hex))
+}
+
+func TestReceiveSecureMessage(t *testing.T) {
+	t.Logf("=== 开始 ECDH + AES 加密通信测试 ===\n")
+
+	// 1. 初始化阶段：B 生成密钥对，并将公钥公开给 A
+	// (实际场景中，B 的公钥可能预置在 A 的代码里，或者通过证书分发)
+	bPriv, _ := MakeKeyPair()
+	bPubHex := GetPubKeyStr(bPriv.PublicKey())
+	t.Logf("[系统] B 的公钥 (Hex): %s\n\n", bPubHex)
+
+	// 2. A 发送加密消息 "ClientHello"
+	// A 只需要知道 B 的公钥 Hex 字符串
+	packet, err := clientASend(bPubHex, "ClientHello: 这是一个安全的握手1请求！")
+	if err != nil {
+		log.Fatal("发送失败:", err)
+	}
+
+	// 3. B 接收并解密
+	// B 使用自己的私钥处理收到的包
+	if err := clientBReceive(bPriv, packet); err != nil {
+		log.Fatal("接收失败:", err)
+	}
+
+	t.Logf("=== 测试结束 ===")
 }

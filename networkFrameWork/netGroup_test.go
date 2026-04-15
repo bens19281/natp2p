@@ -23,7 +23,7 @@ func NodeEstablish(address, originalNodeIdSource string, t *testing.T, wg *sync.
 		t.Fatalf("Failed to make key pair: %v", err)
 		return ""
 	}
-	pairId := crypoto.GetPubKeyStr(&pair.PublicKey)
+	pairId := crypoto.GetPubKeyStr(pair.PublicKey())
 	hash := sha256.Sum256([]byte(pairId))
 	originalNodeId := hex.EncodeToString(hash[:])
 
@@ -52,7 +52,7 @@ func NodeEstablish(address, originalNodeIdSource string, t *testing.T, wg *sync.
 			err = stream.SendMessage(context.Background(), ResponseMessage)
 			if err != nil {
 				stream.Close()
-				t.Errorf("ERROR:" + err.Error())
+				t.Error("ERROR:" + err.Error())
 				return
 			}
 		}
@@ -84,10 +84,10 @@ func ClientTestWithStream(clientSteam network.Stream, connectionId, targetNodeId
 func RelayServerWithStream(relayServerAddr string, t *testing.T, wg *sync.WaitGroup, continueEstablish bool) (Id string) {
 	pair, err := crypoto.MakeKeyPair()
 	if err != nil {
-		t.Errorf("ERROR:" + err.Error())
+		t.Error("ERROR:" + err.Error())
 		return ""
 	}
-	pairId := crypoto.GetPubKeyStr(&pair.PublicKey)
+	pairId := crypoto.GetPubKeyStr(pair.PublicKey())
 	stream, err := TryRegisterRelayStream(pairId, relayServerAddr)
 	if err != nil {
 		t.Fatalf("Failed to register relay stream: %v", err.Error())
@@ -107,7 +107,7 @@ func ClientSendTestMessage(TargetNodeId, RelayServerAddr, originalNodeIdSource s
 		t.Fatalf("Failed to make key pair: %v", err)
 		return ""
 	}
-	pairId := crypoto.GetPubKeyStr(&pair.PublicKey)
+	pairId := crypoto.GetPubKeyStr(pair.PublicKey())
 	hash := sha256.Sum256([]byte(pairId))
 	originalNodeId := hex.EncodeToString(hash[:])
 
@@ -129,13 +129,13 @@ func ClientSendTestMessage(TargetNodeId, RelayServerAddr, originalNodeIdSource s
 		}
 		bytes, err := body.ParseToBytes()
 		if err != nil {
-			t.Errorf("ERROR:" + err.Error())
+			t.Error("ERROR:" + err.Error())
 			return
 		}
 		// 第一次建立连接
 		_, err = dial.Write(bytes)
 		if err != nil {
-			t.Errorf("ERROR:" + err.Error())
+			t.Error("ERROR:" + err.Error())
 			return
 		}
 		time.Sleep(2 * time.Second)
@@ -298,7 +298,7 @@ func TestRandomRelayClientInteraction(t *testing.T) {
 			t.Fatalf("Failed to make key pair: %v", err)
 			return
 		}
-		pubKeyStr := crypoto.GetPubKeyStr(&pair.PublicKey)
+		pubKeyStr := crypoto.GetPubKeyStr(pair.PublicKey())
 		hash := sha256.Sum256([]byte(pubKeyStr))
 		originalNodeId := hex.EncodeToString(hash[:])
 		go func() {

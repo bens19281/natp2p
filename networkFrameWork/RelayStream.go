@@ -4,7 +4,7 @@ import (
 	"bnfs_p2p/crypoto"
 	"bnfs_p2p/network"
 	"context"
-	"crypto/ecdsa"
+	"crypto/ecdh"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
@@ -13,11 +13,12 @@ import (
 )
 
 type RelayStream struct {
-	nodeId     string
-	connection net.Conn
-	lock       sync.Mutex
-	publicKey  *ecdsa.PublicKey
-	isClosed   bool
+	nodeId       string
+	connection   net.Conn
+	lock         sync.Mutex
+	publicKey    *ecdh.PublicKey
+	isClosed     bool
+	connectionId string
 }
 
 func (r *RelayStream) Close() error {
@@ -76,6 +77,9 @@ func (r *RelayStream) SendMessage(ctx context.Context, message *network.Message)
 
 func (r *RelayStream) NodeId() string {
 	return r.nodeId
+}
+func (r *RelayStream) ConnectionId() string {
+	return ""
 }
 
 func TrySetupRelayStream(conn net.Conn, message *network.Message) (network.Stream, error) {

@@ -10,4 +10,5 @@ type Stream interface {
 	NextMessage() (*Message, error)
 	SendMessage(ctx context.Context, message *Message) error
 	NodeId() string
+	ConnectionId() string
 }

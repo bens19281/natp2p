@@ -12,9 +12,10 @@ import (
 )
 
 type TcpStream struct {
-	nodeId     string
-	connection net.Conn
-	lock       sync.Mutex
+	nodeId       string
+	connection   net.Conn
+	lock         sync.Mutex
+	connectionId string
 }
 
 func (t *TcpStream) Close() error {
@@ -52,6 +53,9 @@ func (t *TcpStream) SendMessage(ctx context.Context, message *network.Message) e
 
 func (t *TcpStream) NodeId() string {
 	return t.nodeId
+}
+func (t *TcpStream) ConnectionId() string {
+	return t.connectionId
 }
 func TryConnectTCPStream(addr, targetNodeId, originalPubkeyHex string) (network.Stream, string, error) {
 	connectionId := uuid.New().String()
