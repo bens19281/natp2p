@@ -71,9 +71,7 @@ func TryConnectTCPStream(addr, targetNodeId, originalPubkeyHex string) (network.
 		Header:  header,
 		Payload: []byte(originalPubkeyHex),
 	}
-	hash := sha256.Sum256([]byte(originalPubkeyHex))
-	originalNodeId := hex.EncodeToString(hash[:])
-	stream, err := clientStream(body, addr, originalNodeId)
+	stream, err := clientStream(body, addr, targetNodeId)
 	return stream, connectionId, err
 }
 
