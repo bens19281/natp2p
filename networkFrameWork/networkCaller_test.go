@@ -3,9 +3,9 @@ package networkFrameWork
 import (
 	"bnfs_p2p/crypoto"
 	"bnfs_p2p/network"
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"net"
 	"sync"
 	"testing"
@@ -30,6 +30,11 @@ func RelayClientTest(t *testing.T) string {
 		if err != nil {
 			return
 		}
+		data, err := json.Marshal(message)
+		if err != nil {
+			return
+		}
+		t.Logf("[系统] 收到消息: %s\n", data)
 		tcpStream := stream.(*TcpStream)
 		hash := sha256.Sum256(message.Payload)
 		originalNodeId := hex.EncodeToString(hash[:])
@@ -41,13 +46,13 @@ func RelayClientTest(t *testing.T) string {
 		}
 
 		crypto, err := crypoto.NewTLSCrypto(ClientStream, pair)
-		t.Log("RelayClientTest NewTLSCrypto success")
-		defer ClientStream.Close()
+
 		if err != nil {
 			t.Errorf("NewTLSCrypto err: %v", err)
 			return
 		}
-
+		t.Log("RelayClientTest NewTLSCrypto success")
+		defer ClientStream.Close()
 		message, err = ClientStream.NextMessage()
 		if err != nil {
 			ClientStream.Close()
@@ -79,19 +84,19 @@ func ClientTest(RelayNodeId string, t *testing.T) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	header := &network.Header{
-		RouteName:     "",
-		NodeId:        RelayNodeId,
-		NodeIdVersion: 1,
-		PayLoadLength: 0,
-		ConnectionId:  connectionId,
-		OriginData:    nil,
-	}
-	body := &network.Message{
-		Header:  header,
-		Payload: []byte(pubKeyStr),
-	}
-	stream.SendMessage(context.Background(), body)
+	// header := &network.Header{
+	// 	RouteName:     "",
+	// 	NodeId:        RelayNodeId,
+	// 	NodeIdVersion: 1,
+	// 	PayLoadLength: 0,
+	// 	ConnectionId:  connectionId,
+	// 	OriginData:    nil,
+	// }
+	// body := &network.Message{
+	// 	Header:  header,
+	// 	Payload: []byte(pubKeyStr),
+	// }
+	// stream.SendMessage(context.Background(), body)
 
 	go func() {
 		crypto, err := crypoto.NewTLSCrypto(stream, pair)
@@ -115,7 +120,7 @@ func ClientTest(RelayNodeId string, t *testing.T) (string, string, error) {
 			},
 			Payload: encrypt,
 		}
-		err = stream.SendMessage(nil, &Message)
+		err = stream.SendMessage(t.Context(), &Message)
 		if err != nil {
 			return
 		}
