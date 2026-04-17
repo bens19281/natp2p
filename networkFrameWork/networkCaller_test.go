@@ -3,6 +3,7 @@ package networkFrameWork
 import (
 	"bnfs_p2p/crypoto"
 	"bnfs_p2p/network"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -84,19 +85,19 @@ func ClientTest(RelayNodeId string, t *testing.T) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	// header := &network.Header{
-	// 	RouteName:     "",
-	// 	NodeId:        RelayNodeId,
-	// 	NodeIdVersion: 1,
-	// 	PayLoadLength: 0,
-	// 	ConnectionId:  connectionId,
-	// 	OriginData:    nil,
-	// }
-	// body := &network.Message{
-	// 	Header:  header,
-	// 	Payload: []byte(pubKeyStr),
-	// }
-	// stream.SendMessage(context.Background(), body)
+	header := &network.Header{
+		RouteName:     "",
+		NodeId:        RelayNodeId,
+		NodeIdVersion: 1,
+		PayLoadLength: 0,
+		ConnectionId:  connectionId,
+		OriginData:    nil,
+	}
+	body := &network.Message{
+		Header:  header,
+		Payload: []byte(pubKeyStr),
+	}
+	stream.SendMessage(context.Background(), body)
 
 	go func() {
 		crypto, err := crypoto.NewTLSCrypto(stream, pair)
